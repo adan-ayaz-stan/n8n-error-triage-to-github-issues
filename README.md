@@ -52,7 +52,7 @@ This shows how a single issue looks on the inside.
 
 The main idea is that a web application will call this endpoint with the `error data` whenever a `critical 500 error` is encountered in the application.
 
-#### Endpoint Call Body ( POST Request )
+#### Endpoint Call Body ( GET Request )
 
 ```json
 {
