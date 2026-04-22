@@ -94,4 +94,4 @@ Issues will be identified by `Error ${<status_code>} : {<app_version>_<location>
 
 ## Logs Storage
 
-For storing the logs to calculate the rolling window frequencies, we will use the SQLite DB as a demonstration.
+For storing the logs to calculate the rolling window frequencies, we are using PostgreSQL to calculate fast rolling windows.
