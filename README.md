@@ -1,9 +1,52 @@
-# N8N Portfolio Projects
+# N8N - Error Traige to Github Issues
 
-This is the repository for the portfolio projects for n8n.
+This repository has the n8n workflow concerned with error triage where an app running into an error calls this endpoint and it triages it into an automated dev channel notification, with an issue being created on Github repository.
 
-Username: adan-ayaz-stan <br>
-Email: adanayaztracer@gmail.com
+## Screenshots
+
+### Hero
+
+<p align="center">
+  <img src="assets/Hero.png" alt="Hero image" width="1000" />
+</p>
+
+### Workflow in n8n
+
+<p align="center">
+  <img src="assets/image.png" alt="n8n workflow" width="1000" />
+</p>
+
+### Discord proof
+
+This shows the agent sending messages in Discord.
+
+<p align="center">
+  <img src="assets/image%20%281%29.png" alt="Discord chat proof" width="1000" />
+</p>
+
+### Email notification
+
+This shows the email sent to notify about the error triage.
+
+<p align="center">
+  <img src="assets/image%20%282%29.png" alt="Email notification" width="1000" />
+</p>
+
+### GitHub issues created
+
+This shows the issues created in GitHub Issues.
+
+<p align="center">
+  <img src="assets/image%20%283%29.png" alt="GitHub issues created" width="1000" />
+</p>
+
+### Individual issue view
+
+This shows how a single issue looks on the inside.
+
+<p align="center">
+  <img src="assets/image%20%284%29.png" alt="Individual issue view" width="1000" />
+</p>
 
 ## Error Logs ==> Github Issue
 
