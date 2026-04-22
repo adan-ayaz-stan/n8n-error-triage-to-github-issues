@@ -1,0 +1,680 @@
+{
+  "name": "Error Logs ==> Github Issues",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -528,
+        384
+      ],
+      "id": "4b34af40-6faa-4050-9302-a83c8bb92e89",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "deleteTable",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "app_errors",
+          "mode": "list",
+          "cachedResultName": "app_errors"
+        },
+        "deleteCommand": "delete",
+        "where": {
+          "values": [
+            {
+              "column": "timestamp",
+              "condition": "<",
+              "value": "={{ $now.minus({ days: 90}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -320,
+        384
+      ],
+      "id": "33c9af69-2d58-4bc5-b266-0ace4e289797",
+      "name": "Delete logs older than 90 days",
+      "credentials": {
+        "postgres": {
+          "id": "KjLxPiJJZtRCNNFD",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2adfa8c9-a07d-4051-a2f2-63aca7d1c14c",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        496,
+        144
+      ],
+      "id": "dc16d6d1-58d1-48fa-b4bb-eda4975851e6",
+      "name": "If issue exists with the label",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "path": "a06f52f0-5cad-476d-8a09-e9f1a7fa99d1",
+        "options": {
+          "responseData": "{ \"status\": \"200\", \"message\": \"success\" }"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -528,
+        144
+      ],
+      "id": "7ac68beb-61f6-4e4f-92e1-7333636ab635",
+      "name": "Web App calls webhook when error",
+      "webhookId": "a06f52f0-5cad-476d-8a09-e9f1a7fa99d1"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "app_errors",
+          "mode": "list",
+          "cachedResultName": "app_errors"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.body.status }}",
+            "location": "={{ $json.body.location }}",
+            "app_version": "={{ $json.body.app_version }}",
+            "timestamp": "={{ $now }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "app_version",
+              "displayName": "app_version",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -304,
+        144
+      ],
+      "id": "93d46d55-f4e5-49f8-9193-7c6929c505de",
+      "name": "Insert error in DB",
+      "credentials": {
+        "postgres": {
+          "id": "KjLxPiJJZtRCNNFD",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    COUNT(*) FILTER (WHERE timestamp >= NOW() - INTERVAL '24 hours') AS count_24h,\n    COUNT(*) FILTER (WHERE timestamp >= NOW() - INTERVAL '30 days') AS count_30d\nFROM app_errors\nWHERE location='{{ $json.location }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -128,
+        144
+      ],
+      "id": "9ced55d3-311f-4d03-882c-95a5d60c1b24",
+      "name": "Get rolling window count of errors",
+      "credentials": {
+        "postgres": {
+          "id": "KjLxPiJJZtRCNNFD",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const c24 = $json.count_24h || 0;\nconst c30 = $json.count_30d || 0;\n\nconst webhook = $(\"Web App calls webhook when error\").item.json.body;\nconst status = webhook.status || \"Unknown\";\nconst loc = webhook.location || \"Unknown\";\nconst ver = webhook.app_version || \"Unknown\";\n\nlet severity = \"Low\";\nlet is_urgent = false;\n\nif (c24 > 50) {\n    severity = \"Critical\";\n    is_urgent = true;\n} else if (c24 > 10) {\n    severity = \"High\";\n    is_urgent = true;\n} else if (c30 > 50) {\n    severity = \"Medium\";\n}\n\nreturn {\n    severity_level: severity,\n    is_urgent: is_urgent,\n    issue_title: `Error ${status} : ${ver}_${loc}`,\n    label: `error:${loc}`,\n    original_error: webhook \n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        144
+      ],
+      "id": "3db595ab-7d49-49a7-bd14-bce4a8e13997",
+      "name": "Calculate severity of error according to rolling window"
+    },
+    {
+      "parameters": {
+        "resource": "repository",
+        "owner": {
+          "__rl": true,
+          "value": "adan-ayaz-stan",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "aoratic",
+          "mode": "list",
+          "cachedResultName": "aoratic",
+          "cachedResultUrl": "https://github.com/adan-ayaz-stan/aoratic"
+        },
+        "getRepositoryIssuesFilters": {
+          "labels": "={{ $json.label }}"
+        }
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        288,
+        144
+      ],
+      "id": "d5dfce20-9f81-4571-9328-b6efc6c7ac7e",
+      "name": "Get issues of repository matching error",
+      "webhookId": "02cf6c75-73e6-47df-b3eb-fa3bc4bbd3ce",
+      "alwaysOutputData": true,
+      "credentials": {
+        "githubApi": {
+          "id": "iktinLzBbFSqYrHO",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "adan-ayaz-stan",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "aoratic",
+          "mode": "list",
+          "cachedResultName": "aoratic",
+          "cachedResultUrl": "https://github.com/adan-ayaz-stan/aoratic"
+        },
+        "issueNumber": "={{ $json.number }}",
+        "editFields": {
+          "body": "=## 🛠️ Error Dashboard\n**Current Severity:** {{ $node[\"Calculate severity of error according to rolling window\"].json.severity_level }}\n**Status:** 🔴 Active\n**Total Occurrences (24h):** {{ $node[\"Get rolling window count of errors\"].json.count_24h }}\n**App Version:** {{ $node[\"Calculate severity of error according to rolling window\"].json.original_error.app_version }}\n\n---\n### Latest Trace\n`{{ $node[\"Calculate severity of error according to rolling window\"].json.original_error.message }}`\n\n*Last updated: {{ $now.format('yyyy-MM-dd HH:mm') }}*"
+        }
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        0
+      ],
+      "id": "3552185b-90c0-4a3e-8e7e-45268e4d3748",
+      "name": "Update the issue to latest metrics",
+      "webhookId": "bc32f445-fa2f-409f-8e1e-212613a85290",
+      "credentials": {
+        "githubApi": {
+          "id": "iktinLzBbFSqYrHO",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "owner": {
+          "__rl": true,
+          "value": "adan-ayaz-stan",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "aoratic",
+          "mode": "list",
+          "cachedResultName": "aoratic",
+          "cachedResultUrl": "https://github.com/adan-ayaz-stan/aoratic"
+        },
+        "title": "={{ $('Calculate severity of error according to rolling window').item.json.issue_title }}",
+        "body": "=## 🛠️ Error Dashboard\n**Current Severity:** {{ $node[\"Calculate severity of error according to rolling window\"].json.severity_level }}\n**Status:** 🔴 Active\n**Total Occurrences (24h):** {{ $node[\"Get rolling window count of errors\"].json.count_24h }}\n**App Version:** {{ $node[\"Calculate severity of error according to rolling window\"].json.original_error.app_version }}\n\n---\n### Latest Trace\n`{{ $node[\"Calculate severity of error according to rolling window\"].json.original_error.message }}`\n\n*Last updated: {{ $now.format('yyyy-MM-dd HH:mm') }}*",
+        "labels": [
+          {
+            "label": "={{ $('Calculate severity of error according to rolling window').item.json.label }}"
+          }
+        ],
+        "assignees": []
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        352
+      ],
+      "id": "277c6ecf-a475-4d59-971d-f6bc24136730",
+      "name": "Create the issue on Github",
+      "webhookId": "60c1e180-8ffc-4ba7-9635-d2dbacfa8c85",
+      "credentials": {
+        "githubApi": {
+          "id": "iktinLzBbFSqYrHO",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1317380052039766066",
+          "mode": "id"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1495803224962367720",
+          "mode": "list",
+          "cachedResultName": "dev",
+          "cachedResultUrl": "https://discord.com/channels/1317380052039766066/1495803224962367720"
+        },
+        "content": "=## 🔁 Recurring Error Updated\n**Issue:** [{{ $node[\"Calculate severity of error according to rolling window\"].json.issue_title }}]({{ $node[\"Get issues of repository matching error\"].json.html_url }})\n**Severity:** `{{ $node[\"Calculate severity of error according to rolling window\"].json.severity_level }}`\n**24h Frequency:** `{{ $node[\"Get rolling window count of errors\"].json.count_24h }}`\n\n*The GitHub issue dashboard has been updated with the latest trace.*",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        912,
+        0
+      ],
+      "id": "8f3e5601-bd24-4a67-bbf3-eeeb27a1e2f6",
+      "name": "Send a message to the Dev Channel for update",
+      "webhookId": "d10786d1-99f2-43ef-9bd2-079e2611bc86",
+      "credentials": {
+        "discordBotApi": {
+          "id": "dxo0CkL1e3y8sHJd",
+          "name": "Discord Bot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash-lite"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Role: Act as a Technical Lead reporting to a non-technical CEO.\n\nTask: Generate a JSON object for an email alert regarding a NEW application error.\n\nContext: The CEO is not on GitHub and needs to understand the business impact quickly. Translate technical terms (like '503' or 'TypeError') into plain English (e.g., 'Service Outage' or 'Feature Malfunction').\n\nData:\n\nError: {{ $node['Calculate severity of error according to rolling window'].json.issue_title }}\n\nSeverity: {{ $node['Calculate severity of error according to rolling window'].json.severity_level }}\n\nApp Version: {{ $node['Calculate severity of error according to rolling window'].json.original_error.app_version }}\n\nLocation: {{ $node['Calculate severity of error according to rolling window'].json.original_error.location }}\n\nGitHub Link: {{ $node['Create the issue on Github'].json.html_url }}\n\nConstraints: > 1. Tone: Urgent, professional, and clear.\n2. No technical fluff. Focus on \"What happened\" and \"Where.\"\n3. Return strictly this JSON format:\n{\n\"subject\": \"[Severity] System Alert: Brief Description\",\n\"content\": \"A 1-2 sentence explanation of the business impact.\"\n}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        928,
+        256
+      ],
+      "id": "3a638d32-8f6b-4d2e-ab72-958e29869b68",
+      "name": "Draft Email to Notify Repository Owner",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "UphLd3f5U4aEq0rI",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1317380052039766066",
+          "mode": "id"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1495803224962367720",
+          "mode": "list",
+          "cachedResultName": "dev",
+          "cachedResultUrl": "https://discord.com/channels/1317380052039766066/1495803224962367720"
+        },
+        "content": "=## New Error Occurence Found\n**Issue:** [{{ $node[\"Calculate severity of error according to rolling window\"].json.issue_title }}]({{ $node[\"Create the issue on Github\"].json.html_url }})\n**Severity:** `{{ $node[\"Calculate severity of error according to rolling window\"].json.severity_level }}`\n**24h Frequency:** `{{ $node[\"Get rolling window count of errors\"].json.count_24h }}`\n\n*The GitHub issue dashboard has been updated with the latest trace.*",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        928,
+        448
+      ],
+      "id": "82038db7-39db-4091-a5cd-62678bcff366",
+      "name": "Send a message to the Dev Channel for new issue",
+      "webhookId": "d10786d1-99f2-43ef-9bd2-079e2611bc86",
+      "credentials": {
+        "discordBotApi": {
+          "id": "dxo0CkL1e3y8sHJd",
+          "name": "Discord Bot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Grab the raw string from the AI response\nconst rawText = $input.first().json.content.parts[0].text;\n\n// 2. Clean it (in case the AI added markdown ```json blocks)\nconst cleanedText = rawText.replace(/```json|```/g, \"\").trim();\n\n// 3. Parse it into a real JSON object\nreturn JSON.parse(cleanedText);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        256
+      ],
+      "id": "28a7832e-1298-4994-948e-7400764f6efa",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "from": "dev@adanayaz.com",
+        "to": "adanayaztracer@gmail.com",
+        "subject": "={{ $json.subject }}",
+        "html": "=<!DOCTYPE html>\n<html>\n<body style=\"font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px;\">\n  <h2 style=\"color: #2c3e50; border-bottom: 2px solid #f4f4f4; padding-bottom: 10px;\">Executive Incident Report</h2>\n  \n  <p>Hello,</p>\n  <p>Our monitoring system has detected a <strong>new</strong> issue that requires your attention. Below is the summary of the impact:</p>\n  \n  <div style=\"background-color: #fcf8e3; border-left: 5px solid #8a6d3b; padding: 15px; margin: 20px 0;\">\n    <p style=\"margin: 0; font-weight: bold; color: #8a6d3b;\">Business Summary:</p>\n    <p style=\"margin: 5px 0 0 0;\">{{ $json.content }}</p>\n  </div>\n\n  <table style=\"width: 100%; border-collapse: collapse;\">\n    <tr>\n      <td style=\"padding: 8px 0; color: #7f8c8d;\"><strong>Status:</strong></td>\n      <td style=\"padding: 8px 0;\">New Incident Recorded</td>\n    </tr>\n    <tr>\n      <td style=\"padding: 8px 0; color: #7f8c8d;\"><strong>Urgency:</strong></td>\n      <td style=\"padding: 8px 0;\"><span style=\"background: #d9534f; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px;\">{{ $node[\"Calculate severity of error according to rolling window\"].json.severity_level }}</span></td>\n    </tr>\n    <tr>\n      <td style=\"padding: 8px 0; color: #7f8c8d;\"><strong>Affected Area:</strong></td>\n      <td style=\"padding: 8px 0;\">{{ $node[\"Calculate severity of error according to rolling window\"].json.original_error.location }}</td>\n    </tr>\n  </table>\n\n  <p style=\"margin-top: 30px;\">\n    <a href=\"{{ $node['Create the issue on Github'].json.html_url }}\" \n       style=\"display: inline-block; padding: 12px 25px; background: #2c3e50; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;\">\n       View Technical Details\n    </a>\n  </p>\n  \n  <p style=\"font-size: 12px; color: #95a5a6; margin-top: 40px; border-top: 1px solid #eee; padding-top: 10px;\">\n    This is an automated notification from the Engineering n8n Pipeline.\n  </p>\n</body>\n</html>",
+        "additionalOptions": {}
+      },
+      "type": "n8n-nodes-resend.resend",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        256
+      ],
+      "id": "7fc1607f-01a4-436b-b295-48a0a53a924b",
+      "name": "Send an email to repository owner for new issue",
+      "webhookId": "b95ed19a-cfff-4e77-a70f-ace68994d567",
+      "credentials": {
+        "resendApi": {
+          "id": "HAM9rNgJuOL7a0pS",
+          "name": "Resend account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Technically, Github automatically sends an email to everyone affiliated with repo when issue is created.\n\nAssumption is the business owner/CEO needs to know about it but is muted/not included in the repository notifications.",
+        "height": 208,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1200,
+        432
+      ],
+      "typeVersion": 1,
+      "id": "3a78ce94-932a-442f-a3e3-10701c09e549",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Delete logs older than 90 days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If issue exists with the label": {
+      "main": [
+        [
+          {
+            "node": "Update the issue to latest metrics",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create the issue on Github",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web App calls webhook when error": {
+      "main": [
+        [
+          {
+            "node": "Insert error in DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert error in DB": {
+      "main": [
+        [
+          {
+            "node": "Get rolling window count of errors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get rolling window count of errors": {
+      "main": [
+        [
+          {
+            "node": "Calculate severity of error according to rolling window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate severity of error according to rolling window": {
+      "main": [
+        [
+          {
+            "node": "Get issues of repository matching error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get issues of repository matching error": {
+      "main": [
+        [
+          {
+            "node": "If issue exists with the label",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update the issue to latest metrics": {
+      "main": [
+        [
+          {
+            "node": "Send a message to the Dev Channel for update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create the issue on Github": {
+      "main": [
+        [
+          {
+            "node": "Send a message to the Dev Channel for new issue",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Draft Email to Notify Repository Owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Email to Notify Repository Owner": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send an email to repository owner for new issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "fb74868a-3d02-44a7-81bf-caef685604b2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "830bdce9753f536dad8977b1a54467005d6012bc92baf403f3d339cda3d8ae2f"
+  },
+  "id": "cQvBbCs5GPNEZw1j",
+  "tags": [
+    {
+      "name": "dev",
+      "id": "VJQhDFc90w5A1bTG",
+      "updatedAt": "2026-04-20T15:40:22.032Z",
+      "createdAt": "2026-04-20T15:40:22.032Z"
+    },
+    {
+      "name": "github",
+      "id": "WbUS9Qy4ARpUBzh6",
+      "updatedAt": "2026-04-20T15:40:24.800Z",
+      "createdAt": "2026-04-20T15:40:24.800Z"
+    },
+    {
+      "name": "resend",
+      "id": "QjcVPpNvPVyuo7rG",
+      "updatedAt": "2026-04-20T15:40:28.247Z",
+      "createdAt": "2026-04-20T15:40:28.247Z"
+    },
+    {
+      "name": "discord",
+      "id": "ckHxp2jl1EXOBDik",
+      "updatedAt": "2026-04-20T15:40:32.438Z",
+      "createdAt": "2026-04-20T15:40:32.438Z"
+    }
+  ]
+}
